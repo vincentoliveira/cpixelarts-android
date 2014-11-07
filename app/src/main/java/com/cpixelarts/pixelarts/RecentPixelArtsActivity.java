@@ -13,6 +13,8 @@ import com.cpixelarts.pixelarts.R;
 import com.cpixelarts.pixelarts.adapter.PixelArtAdapter;
 import com.cpixelarts.pixelarts.model.PixelArt;
 import com.cpixelarts.pixelarts.storage.PixelArtStorage;
+import com.google.android.gms.analytics.HitBuilders;
+import com.google.android.gms.analytics.Tracker;
 
 import java.util.List;
 
@@ -27,6 +29,11 @@ public class RecentPixelArtsActivity extends Activity implements AdapterView.OnI
 
         gridView = (GridView) findViewById(R.id.grid_view);
         gridView.setOnItemClickListener(this);
+
+
+        Tracker t = ((CPixelArtsApplication) getApplication()).getTracker();
+        t.setScreenName("Recent Pixel Arts");
+        t.send(new HitBuilders.EventBuilder().build());
     }
 
     // Refreshes the display if the network connection and the

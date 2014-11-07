@@ -16,7 +16,8 @@ import com.cpixelarts.pixelarts.model.PixelArt;
 import com.cpixelarts.pixelarts.storage.GalleryStorage;
 import com.cpixelarts.pixelarts.utils.ImageManager;
 import com.cpixelarts.pixelarts.utils.PixelArtParser;
-import com.facebook.AppEventsLogger;
+import com.google.android.gms.analytics.HitBuilders;
+import com.google.android.gms.analytics.Tracker;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -51,6 +52,10 @@ public class GalleryActivity extends Activity implements AdapterView.OnItemClick
 
         String galleryJson = GalleryStorage.loadGallery(this);
         handleGalleryJson(galleryJson);
+
+        Tracker t = ((CPixelArtsApplication) getApplication()).getTracker();
+        t.setScreenName("Gallery");
+        t.send(new HitBuilders.EventBuilder().build());
     }
 
     protected boolean handleGalleryJson(String galleryJson) {
@@ -81,17 +86,11 @@ public class GalleryActivity extends Activity implements AdapterView.OnItemClick
     @Override
     protected void onResume() {
         super.onResume();
-
-        // Logs 'install' and 'app activate' App Events.
-        AppEventsLogger.activateApp(this);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-
-        // Logs 'app deactivate' App Event.
-        AppEventsLogger.deactivateApp(this);
     }
 
     @Override

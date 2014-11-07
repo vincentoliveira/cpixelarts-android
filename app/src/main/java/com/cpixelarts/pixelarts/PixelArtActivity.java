@@ -19,6 +19,8 @@ import com.cpixelarts.pixelarts.model.PixelArt;
 import com.cpixelarts.pixelarts.storage.PixelArtStorage;
 import com.cpixelarts.pixelarts.utils.PixelArtParser;
 import com.cpixelarts.pixelarts.view.PixelArtView;
+import com.google.android.gms.analytics.HitBuilders;
+import com.google.android.gms.analytics.Tracker;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -89,6 +91,9 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
             }
         }
 
+
+        Tracker t = ((CPixelArtsApplication) getApplication()).getTracker();
+
         if (mPixelArt == null)  {
             mPixelArt = new PixelArt();
             mPixelArt.title = getString(R.string.new_pixel_art);
@@ -96,7 +101,13 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
             mPixelArt.height = 16;
             mPixelArt.pixels = new int[256];
             Arrays.fill(mPixelArt.pixels, -1);
+
+            t.setScreenName("New Pixel Art");
+        } else {
+            t.setScreenName("Edit Pixel Art: " + mPixelArt.id);
         }
+
+        t.send(new HitBuilders.EventBuilder().build());
 
         displayPixelArt();
     }
