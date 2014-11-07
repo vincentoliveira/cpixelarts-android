@@ -26,3 +26,4 @@ proguard/
 /.idea/libraries
 .DS_Store
 /build
+facebook/build
