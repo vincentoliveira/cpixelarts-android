@@ -49,8 +49,8 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
     private static final String SET_TITLE_URL = "/api/drawings/{id}/title";
     private static final String LOCK_URL = "/api/drawings/{id}/lock";
 
-    private PixelArt mPixelArt;
-    private PixelArtView mView;
+    private PixelArt mPixelArt = null;
+    private PixelArtView mView = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +63,7 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
         setContentView(mView);
 
         Bundle extra = getIntent().getExtras();
-        if (extra != null) {
+        if (extra != null && mPixelArt == null) {
             if (extra.containsKey("id") && extra.getInt("id") > 0) {
                 mPixelArt = new PixelArt();
                 mPixelArt.id = extra.getInt("id");
@@ -74,9 +74,15 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
                     mPixelArt = pixelArt;
                 }
 
-                mPixelArt.title = extra.getString("title");
-                mPixelArt.width = extra.getInt("width");
-                mPixelArt.height = extra.getInt("height");
+                if (extra.containsKey("title")) {
+                    mPixelArt.title = extra.getString("title");
+                }
+                if (extra.containsKey("width")) {
+                    mPixelArt.width = extra.getInt("width");
+                }
+                if (extra.containsKey("height")) {
+                    mPixelArt.height = extra.getInt("height");
+                }
 
                 loadPixelArt(mPixelArt.id);
                 getActionBar().setTitle(mPixelArt.title);
@@ -362,6 +368,9 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
                 if (pixelArt != null) {
                     mPixelArt = pixelArt;
                     PixelArtStorage.storePixelArt(getBaseContext(), mPixelArt.id, result);
+
+                    getIntent().removeExtra("new");
+                    getIntent().putExtra("id", mPixelArt.id);
 
                     if (mView != null) {
                         mView.setPixelArt(mPixelArt);
