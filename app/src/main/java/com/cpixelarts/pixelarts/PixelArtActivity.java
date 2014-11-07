@@ -310,6 +310,7 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
                 PixelArtStorage.storePixelArt(getBaseContext(), mPixelArt.id, result);
                 displayPixelArt();
             } else {
+                mPixelArt.locked = true;
                 Toast.makeText(getBaseContext(), errorMsg, Toast.LENGTH_SHORT).show();
             }
         }
@@ -378,6 +379,7 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
                     invalidateOptionsMenu();
                 }
             } else {
+                mPixelArt.locked = true;
                 Toast.makeText(getBaseContext(), errorMsg, Toast.LENGTH_SHORT).show();
                 displayPixelArt();
             }
