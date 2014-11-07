@@ -110,13 +110,12 @@ public class PixelArtStorage {
                     if (pixelArts.size() >= MAX_RECENT_FILES) {
                         // clean cache
                         inFile.delete();
-                        continue;
-                    }
-
-                    String json = readFile(inFile);
-                    PixelArt pixelArt = PixelArtParser.parsePixelArt(json);
-                    if (pixelArt != null) {
-                        pixelArts.add(pixelArt);
+                    } else {
+                        String json = readFile(inFile);
+                        PixelArt pixelArt = PixelArtParser.parsePixelArt(json);
+                        if (pixelArt != null) {
+                            pixelArts.add(pixelArt);
+                        }
                     }
                 } catch (IOException e) {
                     // do nothing
