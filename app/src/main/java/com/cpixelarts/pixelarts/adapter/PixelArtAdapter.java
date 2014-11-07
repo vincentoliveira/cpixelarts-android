@@ -49,15 +49,20 @@ public class PixelArtAdapter extends BaseAdapter {
         }
 
         ImageView imageView = (ImageView) convertView.findViewById(R.id.imageView);
+        ImageView lockImageView = (ImageView) convertView.findViewById(R.id.lockImageView);
         TextView textView = (TextView) convertView.findViewById(R.id.textView);
 
         PixelArt pixelArt = this.getItem(position);
-        textView.setText(pixelArt.title);
-
         if (pixelArt.title != null) {
             textView.setText(pixelArt.title);
         } else if (pixelArt.id > 0) {
             textView.setText("#" + pixelArt.id);
+        }
+
+        if (pixelArt.locked) {
+            lockImageView.setVisibility(View.VISIBLE);
+        } else {
+            lockImageView.setVisibility(View.INVISIBLE);
         }
 
         ImageManager.getInstance().loadBitmap(pixelArt.id, imageView);
