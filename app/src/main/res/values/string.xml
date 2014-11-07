@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">cPixel Arts</string>
+    <string name="empty_string">This is an empty string</string>
+
+    <!-- menus -->
+    <string name="new_pixel_art">New Pixel Art</string>
+    <string name="my_pixel_arts">Recent Pixel Arts</string>
+    <string name="name_it">Name it</string>
+    <string name="lock_it">Lock it</string>
+    <string name="share">Share it</string>
+
+    <!-- messages -->
+    <string name="msg_unable_retrieve_pixel_arts">Unable to retrieve pixel arts.</string>
+    <string name="msg_creating">Creating Pixel Arts...</string>
+    <string name="msg_loading">Loading Pixel Arts...</string>
+
+    <!-- facebook -->
+    <string name="facebook_app_id">323063997879046</string>
+</resources>

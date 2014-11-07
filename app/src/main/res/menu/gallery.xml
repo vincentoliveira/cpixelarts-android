@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_create"
+        android:orderInCategory="100"
+        android:showAsAction="ifRoom"
+        android:title="@string/new_pixel_art"
+        />
+    <item
+        android:id="@+id/action_my_pixel_arts"
+        android:orderInCategory="100"
+        android:showAsAction="ifRoom"
+        android:title="@string/my_pixel_arts" />
+</menu>
