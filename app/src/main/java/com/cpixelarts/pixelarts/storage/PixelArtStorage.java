@@ -13,6 +13,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -22,6 +24,7 @@ public class PixelArtStorage {
     public static final String FILENAME = "cpixelarts_{id}.json";
     public static final String FILENAME_PATTERN = ".*/cpixelarts_[\\d]+\\.json$";
     public static final String ENCODING = "UTF-8";
+    public static final int    MAX_RECENT_FILES = 8;
 
     protected static File getDirectory(Context context) {
         return context.getCacheDir();
@@ -95,9 +98,21 @@ public class PixelArtStorage {
 
         File directory = getDirectory(context);
         File[] files = directory.listFiles();
+        Arrays.sort(files, new Comparator<File>() {
+            public int compare(File f1, File f2) {
+                return Long.valueOf(f2.lastModified()).compareTo(f1.lastModified());
+            }
+        });
+
         for (File inFile : files) {
             if (inFile.isFile() && inFile.getAbsolutePath().matches(FILENAME_PATTERN)) {
                 try {
+                    if (pixelArts.size() >= MAX_RECENT_FILES) {
+                        // clean cache
+                        inFile.delete();
+                        continue;
+                    }
+
                     String json = readFile(inFile);
                     PixelArt pixelArt = PixelArtParser.parsePixelArt(json);
                     if (pixelArt != null) {
