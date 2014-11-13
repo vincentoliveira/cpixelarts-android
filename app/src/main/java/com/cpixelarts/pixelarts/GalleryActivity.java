@@ -55,7 +55,7 @@ public class GalleryActivity extends Activity implements AdapterView.OnItemClick
 
         Tracker t = ((CPixelArtsApplication) getApplication()).getTracker();
         t.setScreenName("Gallery");
-        t.send(new HitBuilders.EventBuilder().build());
+        t.send(new HitBuilders.AppViewBuilder().build());
     }
 
     protected boolean handleGalleryJson(String galleryJson) {

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--Replace placeholder ID with your tracking ID-->
+    <string name="ga_trackingId">UA-44614143-6</string>
+
+    <!--Enable automatic activity tracking-->
+    <bool name="ga_autoActivityTracking">true</bool>
+
+    <!--Enable automatic exception tracking-->
+    <bool name="ga_reportUncaughtExceptions">true</bool>
+
+    <!-- Screen names -->
+    <screenName name="com.cpixelarts.pixelarts.GalleryActivity">
+        Gallery
+    </screenName>
+    <screenName name="com.cpixelarts.pixelarts.PixelArtActivity">
+        Edit Pixel Art
+    </screenName>
+    <screenName name="com.cpixelarts.pixelarts.RecentPixelArtsActivity">
+        Recent Pixel Arts
+    </screenName>
+</resources>

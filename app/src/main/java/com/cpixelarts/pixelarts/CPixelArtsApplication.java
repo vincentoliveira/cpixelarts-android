@@ -16,9 +16,8 @@ public class CPixelArtsApplication extends Application {
     synchronized Tracker getTracker() {
         if (mTracker == null) {
             GoogleAnalytics analytics = GoogleAnalytics.getInstance(this);
-            mTracker = analytics.newTracker(PROPERTY_ID);
+            mTracker = analytics.newTracker(R.xml.analytics);
             mTracker.enableAdvertisingIdCollection(true);
-            mTracker.enableExceptionReporting(true);
         }
 
         return mTracker;

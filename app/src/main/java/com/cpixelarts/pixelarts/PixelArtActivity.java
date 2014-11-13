@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
@@ -50,6 +51,10 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
     private static final String ADD_PIXEL_URL = "/api/drawings/{id}/pixels";
     private static final String SET_TITLE_URL = "/api/drawings/{id}/title";
     private static final String LOCK_URL = "/api/drawings/{id}/lock";
+
+    private static final String EVENT_ADD_PIXEL_CATEGORY = "pixel";
+    private static final String EVENT_ADD_PIXEL_ACTION = "add";
+    private static final String EVENT_ADD_PIXEL_LABEL = "add pixel to {id}, color: {color}, position: {position}";
 
     private PixelArt mPixelArt = null;
     private PixelArtView mView = null;
@@ -107,7 +112,7 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
             t.setScreenName("Edit Pixel Art: " + mPixelArt.id);
         }
 
-        t.send(new HitBuilders.EventBuilder().build());
+        t.send(new HitBuilders.AppViewBuilder().build());
 
         displayPixelArt();
     }
@@ -253,11 +258,26 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
     @Override
     public void onSelectPixel(int position) {
         mPixelArt.pixels[position] = mView.getCurrentColor();
+        String label = EVENT_ADD_PIXEL_LABEL
+                .replace("{color}", Integer.toString(mView.getCurrentColor()))
+                .replace("{position}", Integer.toString(position));
         if (mPixelArt.id < 0) {
             createPixelArt(mView.getCurrentColor(), position);
+            label = label.replace("{id}", "new pixel art");
         } else {
             addPixelToPixelArt(mView.getCurrentColor(), position);
+            label = label.replace("{id}", Integer.toString(mPixelArt.id));
         }
+
+        Tracker t = ((CPixelArtsApplication) getApplication()).getTracker();
+        // Build and send an Event.
+        t.send(new HitBuilders.EventBuilder()
+                .setCategory(EVENT_ADD_PIXEL_CATEGORY)
+                .setAction(EVENT_ADD_PIXEL_ACTION)
+                .setLabel(label)
+                .build());
+
+        Log.d("ga_label", label);
     }
 
     protected void createPixelArt(int color, int position) {

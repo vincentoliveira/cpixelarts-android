@@ -33,7 +33,7 @@ public class RecentPixelArtsActivity extends Activity implements AdapterView.OnI
 
         Tracker t = ((CPixelArtsApplication) getApplication()).getTracker();
         t.setScreenName("Recent Pixel Arts");
-        t.send(new HitBuilders.EventBuilder().build());
+        t.send(new HitBuilders.AppViewBuilder().build());
     }
 
     // Refreshes the display if the network connection and the
