@@ -285,8 +285,6 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectP
                 .setAction(EVENT_ADD_PIXEL_ACTION)
                 .setLabel(label)
                 .build());
-
-        Log.d("ga_label", label);
     }
 
     private class DownloadPixelArtTask extends GetAsyncTask {
