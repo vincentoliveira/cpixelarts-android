@@ -5,13 +5,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.cpixelarts.pixelarts.R;
 import com.cpixelarts.pixelarts.model.PixelArt;
-import com.cpixelarts.pixelarts.utils.DownloadImageTask;
 import com.cpixelarts.pixelarts.utils.ImageManager;
 
 import java.util.List;

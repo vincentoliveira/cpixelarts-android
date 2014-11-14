@@ -5,6 +5,7 @@ import android.support.v4.util.LruCache;
 import android.widget.ImageView;
 
 import com.cpixelarts.pixelarts.R;
+import com.cpixelarts.pixelarts.restclient.DownloadImageTask;
 
 import java.util.Date;
 import java.util.HashMap;

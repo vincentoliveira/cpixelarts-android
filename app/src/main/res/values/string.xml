@@ -11,8 +11,11 @@
     <string name="share">Share it</string>
 
     <!-- messages -->
-    <string name="msg_unable_retrieve_pixel_arts">Unable to retrieve pixel arts.</string>
-    <string name="msg_creating">Creating Pixel Arts...</string>
+    <string name="msg_unable_retrieve_pixel_arts">Unable to retrieve Pixel Arts.</string>
+    <string name="msg_unable_add_pixel">Unable to add Pixel to Pixel Arts.</string>
+    <string name="msg_unable_name">Unable to name this Pixel Art.</string>
+    <string name="msg_unable_lock">Unable to lock this Pixel Art.</string>
+    <string name="msg_adding_pixel">Add Pixel to Pixel Arts...</string>
     <string name="msg_loading">Loading Pixel Arts...</string>
 
     <!-- facebook -->

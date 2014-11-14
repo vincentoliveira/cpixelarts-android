@@ -9,6 +9,7 @@ import android.view.View;
 
 import com.cpixelarts.pixelarts.model.PixelArt;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Random;
 
@@ -17,21 +18,13 @@ import java.util.Random;
  */
 public class PixelArtView extends View {
 
-    public interface OnSelectColorListener {
-        public void onSelectColor(int color);
+    public interface OnSelectPixelsListener {
+        public void onSelectPixels(Integer[] position);
     }
 
-    public interface OnSelectPixelListener {
-        public void onSelectPixel(int position);
-    }
-
-    private OnSelectColorListener mOnSelectColorListener = null;
-    private OnSelectPixelListener mOnSelectPixelListener = null;
-    public void setOnSelectColorListener(OnSelectColorListener onSelectColorListener) {
-        this.mOnSelectColorListener = onSelectColorListener;
-    }
-    public void setOnSelectPixelListener(OnSelectPixelListener onSelectPixelListener) {
-        this.mOnSelectPixelListener = onSelectPixelListener;
+    private OnSelectPixelsListener mOnSelectPixelsListener = null;
+    public void setOnSelectPixelsListener(OnSelectPixelsListener onSelectPixelsListener) {
+        this.mOnSelectPixelsListener = onSelectPixelsListener;
     }
 
     private static final int INVALID_POINTER_ID = -1;
@@ -45,6 +38,8 @@ public class PixelArtView extends View {
     private boolean displayAllColors = false;
     private boolean addingPixels = false;
     private LinkedList<Integer> colors;
+
+    private ArrayList<Integer> position = new ArrayList<Integer>();
 
     public PixelArtView(Context context) {
         super(context);
@@ -80,6 +75,8 @@ public class PixelArtView extends View {
                 final float x = ev.getX();
                 final float y = ev.getY();
 
+                position.clear();
+
                 if (isOnPixelArt(x, y)) {
                     addPixel(x, y);
                 } else if (isOnColor(x, y)) {
@@ -101,6 +98,25 @@ public class PixelArtView extends View {
 
                 break;
             }
+            case MotionEvent.ACTION_UP: {
+                if (!wasAddingPixels || position.isEmpty()) {
+                    return true;
+                }
+
+                final float x = ev.getX();
+                final float y = ev.getY();
+                if (isOnPixelArt(x, y)) {
+                    if (mOnSelectPixelsListener != null) {
+                        Integer[] positions = position.toArray(new Integer[position.size()]);
+                        mOnSelectPixelsListener.onSelectPixels(positions);
+                    }
+                } else {
+                    for (Integer pos : position) {
+                        mPixelArt.pixels[pos] = -1;
+                    }
+                    invalidate();
+                }
+            }
             default: {
                 break;
             }
@@ -120,9 +136,7 @@ public class PixelArtView extends View {
             mPixelArt.pixels[pos] = currentColor;
             invalidate();
 
-            if (mOnSelectPixelListener != null) {
-                mOnSelectPixelListener.onSelectPixel(pos);
-            }
+            position.add(pos);
         }
     }
 
@@ -148,10 +162,6 @@ public class PixelArtView extends View {
 
         currentColor = color;
         invalidate();
-
-        if (mOnSelectColorListener != null) {
-            mOnSelectColorListener.onSelectColor(color);
-        }
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.cpixelarts.pixelarts.utils;
+package com.cpixelarts.pixelarts.restclient;
 
 import java.io.InputStream;
 
@@ -9,6 +9,7 @@ import android.util.Log;
 import android.widget.ImageView;
 
 import com.cpixelarts.pixelarts.GalleryActivity;
+import com.cpixelarts.pixelarts.utils.ImageManager;
 
 /**
  * Created by vincent on 03/11/14.

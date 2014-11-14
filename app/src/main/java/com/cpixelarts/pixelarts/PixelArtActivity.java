@@ -17,8 +17,11 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.cpixelarts.pixelarts.model.PixelArt;
+import com.cpixelarts.pixelarts.restclient.PatchAsyncTask;
 import com.cpixelarts.pixelarts.storage.PixelArtStorage;
+import com.cpixelarts.pixelarts.restclient.GetAsyncTask;
 import com.cpixelarts.pixelarts.utils.PixelArtParser;
+import com.cpixelarts.pixelarts.restclient.PostAsyncTask;
 import com.cpixelarts.pixelarts.view.PixelArtView;
 import com.google.android.gms.analytics.HitBuilders;
 import com.google.android.gms.analytics.Tracker;
@@ -30,9 +33,7 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
@@ -43,7 +44,7 @@ import java.util.Arrays;
 import java.util.List;
 
 
-public class PixelArtActivity extends Activity implements PixelArtView.OnSelectColorListener, PixelArtView.OnSelectPixelListener {
+public class PixelArtActivity extends Activity implements PixelArtView.OnSelectPixelsListener {
     private static final String VIEW_PIXEL_ART_URL = "/drawing/{title}";
     private static final String PIXEL_ART_FILE_URL = "/gallery/drawing-{title}_512.png";
     private static final String PIXEL_ART_URL = "/api/drawings/{id}";
@@ -54,7 +55,7 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
 
     private static final String EVENT_ADD_PIXEL_CATEGORY = "pixel";
     private static final String EVENT_ADD_PIXEL_ACTION = "add";
-    private static final String EVENT_ADD_PIXEL_LABEL = "add pixel to {id}, color: {color}, position: {position}";
+    private static final String EVENT_ADD_PIXEL_LABEL = "add pixel to #{id}, color: {color}, position: {position}";
 
     private PixelArt mPixelArt = null;
     private PixelArtView mView = null;
@@ -64,8 +65,7 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
         super.onCreate(savedInstanceState);
 
         mView = new PixelArtView(this);
-        mView.setOnSelectColorListener(this);
-        mView.setOnSelectPixelListener(this);
+        mView.setOnSelectPixelsListener(this);
 
         setContentView(mView);
 
@@ -184,7 +184,10 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
                 String url = SET_TITLE_URL.replace("{id}", Integer.toString(mPixelArt.id));
                 String title = input.getText().toString();
                 if (!title.isEmpty()) {
-                    new SetTileTask().execute(url, title);
+                    List<NameValuePair> patchParams = new ArrayList<NameValuePair>();
+                    patchParams.add(new BasicNameValuePair("title", title));
+
+                    new SetTileTask(patchParams).execute(url);
                 }
             }
         });
@@ -251,25 +254,31 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
     }
 
     @Override
-    public void onSelectColor(int color) {
-        // Do nothing
-    }
+    public void onSelectPixels(Integer[] position) {
 
-    @Override
-    public void onSelectPixel(int position) {
-        mPixelArt.pixels[position] = mView.getCurrentColor();
+        List<NameValuePair> postParams = new ArrayList<NameValuePair>();
+        postParams.add(new BasicNameValuePair("color", Integer.toString(mView.getCurrentColor())));
+        int i = 0;
+        for (Integer pos : position) {
+            postParams.add(new BasicNameValuePair("position[" + (i++) + "]", pos.toString()));
+        }
+
+        String url;
         String label = EVENT_ADD_PIXEL_LABEL
                 .replace("{color}", Integer.toString(mView.getCurrentColor()))
-                .replace("{position}", Integer.toString(position));
+                .replace("{position}", Arrays.toString(position));
         if (mPixelArt.id < 0) {
-            createPixelArt(mView.getCurrentColor(), position);
+            url = CREATE_PIXEL_ART_URL;
             label = label.replace("{id}", "new pixel art");
         } else {
-            addPixelToPixelArt(mView.getCurrentColor(), position);
+            url = ADD_PIXEL_URL.replace("{id}", Integer.toString(mPixelArt.id));
             label = label.replace("{id}", Integer.toString(mPixelArt.id));
         }
 
+        new AddPixelTask(postParams).execute(url);
+
         Tracker t = ((CPixelArtsApplication) getApplication()).getTracker();
+
         // Build and send an Event.
         t.send(new HitBuilders.EventBuilder()
                 .setCategory(EVENT_ADD_PIXEL_CATEGORY)
@@ -280,20 +289,7 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
         Log.d("ga_label", label);
     }
 
-    protected void createPixelArt(int color, int position) {
-        String url = CREATE_PIXEL_ART_URL;
-        new CreatePixelArtTask().execute(url, Integer.toString(color), Integer.toString(position));
-    }
-
-    protected void addPixelToPixelArt(int color, int position) {
-        if (mPixelArt.id < 0) {
-            return;
-        }
-        String url = ADD_PIXEL_URL.replace("{id}", Integer.toString(mPixelArt.id));
-        new AddPixelTask().execute(url, Integer.toString(color), Integer.toString(position));
-    }
-
-    private class DownloadPixelArtTask extends AsyncTask<String, Void, String> {
+    private class DownloadPixelArtTask extends GetAsyncTask {
         private static final String errorMsg = "Unable to retrieve pixel art.";
         private ProgressDialog mDialog = null;
 
@@ -304,39 +300,12 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
             mDialog.show();
         }
 
-        @Override
-        protected String doInBackground(String... urls) {
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpResponse response;
-            try {
-                String url = GalleryActivity.BASE_URL + urls[0];
-                response = httpclient.execute(new HttpGet(url));
-                StatusLine statusLine = response.getStatusLine();
-                if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    response.getEntity().writeTo(out);
-                    out.close();
-                    return out.toString();
-                } else {
-                    //Closes the connection.
-                    response.getEntity().getContent().close();
-                }
-            } catch (ClientProtocolException e) {
-                //TODO Handle problems..
-                e.printStackTrace();
-            } catch (IOException e) {
-                //TODO Handle problems..
-                e.printStackTrace();
-            }
-
-            return errorMsg;
-        }
         // onPostExecute displays the results of the AsyncTask.
         @Override
         protected void onPostExecute(String result) {
             mDialog.dismiss();
 
-            if (!result.equals(errorMsg)) {
+            if (result != null) {
                 mPixelArt = PixelArtParser.parsePixelArt(result);
                 PixelArtStorage.storePixelArt(getBaseContext(), mPixelArt.id, result);
                 displayPixelArt();
@@ -347,221 +316,84 @@ public class PixelArtActivity extends Activity implements PixelArtView.OnSelectC
         }
     }
 
-    private class CreatePixelArtTask extends AsyncTask<String, Void, String> {
-        private static final String errorMsg = "Unable to create pixel art.";
+    private class AddPixelTask extends PostAsyncTask {
         private ProgressDialog mDialog = null;
+
+        public AddPixelTask(List<NameValuePair> postParams) {
+            super(postParams);
+        }
 
         @Override
         protected void onPreExecute() {
             mDialog = new ProgressDialog(PixelArtActivity.this);
-            mDialog.setMessage(getString(R.string.msg_creating));
+            mDialog.setMessage(getString(R.string.msg_adding_pixel));
             mDialog.show();
         }
 
         @Override
-        protected String doInBackground(String... params) {
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpResponse response;
-            try {
-                String url = GalleryActivity.BASE_URL + params[0];
-                List<NameValuePair> postParams = new ArrayList<NameValuePair>();
-                postParams.add(new BasicNameValuePair("color", params[1]));
-                postParams.add(new BasicNameValuePair("position", params[2]));
-
-                HttpPost httppost = new HttpPost(url);
-                httppost.setEntity(new UrlEncodedFormEntity(postParams));
-                response = httpclient.execute(httppost);
-                StatusLine statusLine = response.getStatusLine();
-                if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    response.getEntity().writeTo(out);
-                    out.close();
-                    return out.toString();
-                } else {
-                    //Closes the connection.
-                    response.getEntity().getContent().close();
-                }
-            } catch (ClientProtocolException e) {
-                //TODO Handle problems..
-                e.printStackTrace();
-            } catch (IOException e) {
-                //TODO Handle problems..
-                e.printStackTrace();
-            }
-
-            return errorMsg;
-        }
-        @Override
         protected void onPostExecute(String result) {
             mDialog.dismiss();
 
-            if (!result.equals(errorMsg)) {
-                PixelArt pixelArt = PixelArtParser.parsePixelArt(result);
-                if (pixelArt != null) {
-                    mPixelArt = pixelArt;
-                    PixelArtStorage.storePixelArt(getBaseContext(), mPixelArt.id, result);
+            if (result == null) {
+                mPixelArt.locked = true;
+                Toast.makeText(getBaseContext(), R.string.msg_unable_add_pixel, Toast.LENGTH_SHORT).show();
+                displayPixelArt();
+                return;
+            }
 
+            PixelArt pixelArt = PixelArtParser.parsePixelArt(result);
+            if (pixelArt != null) {
+                mPixelArt = pixelArt;
+                PixelArtStorage.storePixelArt(getBaseContext(), mPixelArt.id, result);
+
+                if (getIntent().hasExtra("new")) {
                     getIntent().removeExtra("new");
                     getIntent().putExtra("id", mPixelArt.id);
-
-                    if (mView != null) {
-                        mView.setPixelArt(mPixelArt);
-                    }
-                    invalidateOptionsMenu();
                 }
-            } else {
-                mPixelArt.locked = true;
-                Toast.makeText(getBaseContext(), errorMsg, Toast.LENGTH_SHORT).show();
-                displayPixelArt();
+
+                if (mView != null) {
+                    mView.setPixelArt(mPixelArt);
+                }
+                invalidateOptionsMenu();
             }
         }
     }
 
-    private class AddPixelTask extends AsyncTask<String, Void, String> {
-        private static final String errorMsg = "Unable to add pixel.";
-        @Override
-        protected String doInBackground(String... params) {
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpResponse response;
-            try {
-                String url = GalleryActivity.BASE_URL + params[0];
-                List<NameValuePair> postParams = new ArrayList<NameValuePair>();
-                postParams.add(new BasicNameValuePair("color", params[1]));
-                postParams.add(new BasicNameValuePair("position", params[2]));
-
-                HttpPost httppost = new HttpPost(url);
-                httppost.setEntity(new UrlEncodedFormEntity(postParams));
-                response = httpclient.execute(httppost);
-                StatusLine statusLine = response.getStatusLine();
-                if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    response.getEntity().writeTo(out);
-                    out.close();
-                    return out.toString();
-                } else {
-                    //Closes the connection.
-                    response.getEntity().getContent().close();
-                }
-            } catch (ClientProtocolException e) {
-                //TODO Handle problems..
-                e.printStackTrace();
-            } catch (IOException e) {
-                //TODO Handle problems..
-                e.printStackTrace();
-            }
-
-            return errorMsg;
+    private class SetTileTask extends PatchAsyncTask {
+        public SetTileTask(List<NameValuePair> postParams) {
+            super(postParams);
         }
 
         @Override
         protected void onPostExecute(String result) {
-            if (!result.equals(errorMsg)) {
-                PixelArt pixelArt = PixelArtParser.parsePixelArt(result);
-                if (pixelArt != null) {
-                    mPixelArt = pixelArt;
-                    PixelArtStorage.storePixelArt(getBaseContext(), mPixelArt.id, result);
-
-                    if (mView != null) {
-                        mView.setPixelArt(mPixelArt);
-                    }
-                }
-            } else {
-                Toast.makeText(getBaseContext(), errorMsg, Toast.LENGTH_SHORT).show();
-                displayPixelArt();
-            }
-        }
-    }
-
-    private class SetTileTask extends AsyncTask<String, Void, String> {
-        private static final String errorMsg = "Unable to name this Pixel Art.";
-        @Override
-        protected String doInBackground(String... params) {
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpResponse response;
-            try {
-                String url = GalleryActivity.BASE_URL + params[0];
-                List<NameValuePair> postParams = new ArrayList<NameValuePair>();
-                postParams.add(new BasicNameValuePair("title", params[1]));
-
-                HttpPatch httppatch = new HttpPatch(url);
-                httppatch.setEntity(new UrlEncodedFormEntity(postParams));
-                response = httpclient.execute(httppatch);
-                StatusLine statusLine = response.getStatusLine();
-                if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    response.getEntity().writeTo(out);
-                    out.close();
-                    return out.toString();
-                } else {
-                    //Closes the connection.
-                    response.getEntity().getContent().close();
-                }
-            } catch (ClientProtocolException e) {
-                //TODO Handle problems..
-                e.printStackTrace();
-            } catch (IOException e) {
-                //TODO Handle problems..
-                e.printStackTrace();
-            }
-
-            return errorMsg;
-
-        }
-        @Override
-        protected void onPostExecute(String result) {
-            if (!result.equals(errorMsg)) {
+            if (result != null) {
                 PixelArt pixelArt = PixelArtParser.parsePixelArt(result);
                 if (pixelArt != null) {
                     mPixelArt = pixelArt;
                     PixelArtStorage.storePixelArt(getBaseContext(), mPixelArt.id, result);
                 }
             } else {
-                Toast.makeText(getBaseContext(), errorMsg, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getBaseContext(), R.string.msg_unable_name, Toast.LENGTH_SHORT).show();
             }
             displayPixelArt();
         }
     }
 
-    private class LockPixelArtTask extends AsyncTask<String, Void, String> {
-        private static final String errorMsg = "Unable to lock this Pixel Art.";
-        @Override
-        protected String doInBackground(String... params) {
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpResponse response;
-            try {
-                String url = GalleryActivity.BASE_URL + params[0];
-                response = httpclient.execute(new HttpPatch(url));
-                StatusLine statusLine = response.getStatusLine();
-                if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    response.getEntity().writeTo(out);
-                    out.close();
-                    return out.toString();
-                } else {
-                    //Closes the connection.
-                    response.getEntity().getContent().close();
-                }
-            } catch (ClientProtocolException e) {
-                //TODO Handle problems..
-                e.printStackTrace();
-            } catch (IOException e) {
-                //TODO Handle problems..
-                e.printStackTrace();
-            }
-
-            return errorMsg;
-
+    private class LockPixelArtTask extends PatchAsyncTask {
+        public LockPixelArtTask() {
+            super(null);
         }
+
         @Override
         protected void onPostExecute(String result) {
-            if (!result.equals(errorMsg)) {
+            if (result != null) {
                 PixelArt pixelArt = PixelArtParser.parsePixelArt(result);
                 if (pixelArt != null) {
                     mPixelArt = pixelArt;
                     PixelArtStorage.storePixelArt(getBaseContext(), mPixelArt.id, result);
                 }
             } else {
-                Toast.makeText(getBaseContext(), errorMsg, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getBaseContext(), R.string.msg_unable_lock, Toast.LENGTH_SHORT).show();
             }
             displayPixelArt();
         }
